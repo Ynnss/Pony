@@ -42,7 +42,7 @@ class Prepare {
 			}
 		}
 
-		if (xml.hasNode.npm) {
+		if (xml.hasNode.npm && pony.text.XmlTools.isTrue(xml.node.npm, 'autoinstall')) {
 			var cwd = new Cwd(xml.node.npm.has.path ? xml.node.npm.att.path : null);
 			Sys.println('install npm');
 			cwd.sw();
@@ -52,7 +52,7 @@ class Prepare {
 			cwd.sw();
 		}
 
-		if (xml.hasNode.texturepacker)
+		if (!Flags.NOTP && xml.hasNode.texturepacker)
 			new Texturepacker(xml.node.texturepacker, app, debug);
 			
 		//if (xml.hasNode.build) try {

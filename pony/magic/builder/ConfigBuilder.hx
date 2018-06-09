@@ -21,7 +21,8 @@
 * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
-package pony.magic;
+package pony.magic.builder;
+
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
@@ -30,6 +31,7 @@ import haxe.xml.Fast;
 import sys.io.File;
 import pony.text.XmlConfigReader;
 import pony.text.XmlTools;
+
 using Lambda;
 #end
 
@@ -41,10 +43,10 @@ class ConfigBuilder {
 
 	private static inline var file:String = 'pony.xml';
 
-	macro static public function build():Array<Field> {
+	macro public static function build():Array<Field> {
 		Context.registerModuleDependency(Context.getLocalModule(), file);
 		var fields:Array<Field> = Context.getBuildFields();
-        if (!sys.FileSystem.exists(file)) return fields;
+		if (!sys.FileSystem.exists(file)) return fields;
 		var xml = XmlTools.fast(File.getContent(file)).node.project;
 		#if debug
 		var debug = true;
@@ -127,6 +129,20 @@ private enum ConfigTypes {
 private class ReadXmlConfig extends XmlConfigReader<PConfig> {
 
 	override private function readNode(xml:Fast):Void {
+		var v:String = null;
+		try {
+			v = xml.innerData;
+			if (v.charAt(0) == '$') {
+				var nv = Sys.getEnv(v.substr(1));
+				if (nv == null) {
+					Sys.println('Warning: Not exists env: ' + v);
+					v = '';
+				} else {
+					v = nv;
+				}
+			}
+		} catch (_:Any) {}
+
 		var stype:String = xml.has.type ? xml.att.type : null;
 
 		var map:Map<String, String> = null;
@@ -149,7 +165,8 @@ private class ReadXmlConfig extends XmlConfigReader<PConfig> {
 					path: ''
 				}, function(conf:PConfig) {
 					if (mapType == null) mapType = conf.type;
-					if (mapType != conf.type) throw 'Type error';
+					if (stype == 'map' && mapType != conf.type)
+						throw 'Type error';
 					map[conf.path + conf.key] = conf.value;
 				});
 
@@ -173,8 +190,9 @@ private class ReadXmlConfig extends XmlConfigReader<PConfig> {
 				if (nt > 1) {
 					CVars;
 				} else if (nt == 1) {
-					var v = xml.innerData;
-					if (Std.string(Std.parseInt(v)) == v)
+					if (v == null)
+						CString;
+					else if (Std.string(Std.parseInt(v)) == v)
 						CInt;
 					else if (Std.string(Std.parseFloat(v)) == v)
 						CFloat;
@@ -206,7 +224,7 @@ private class ReadXmlConfig extends XmlConfigReader<PConfig> {
 					debug: cfg.debug,
 					path: cfg.path,
 					key: xml.name,
-					value: xml.innerData,
+					value: v,
 					type: type
 				});
 
@@ -218,7 +236,6 @@ private class ReadXmlConfig extends XmlConfigReader<PConfig> {
 				}, onConfig);
 
 		}
-
 		
 	}
 

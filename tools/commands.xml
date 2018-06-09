@@ -66,10 +66,12 @@
 	</hash>
 	<unpack>
 		<help>Unpack files from config archives</help>
+		<arg>Configure name</arg>
+		<arg>Debug or release</arg>
 	</unpack>
 	<haxelib>
 		<help>Haxelib tools</help>
-		<arg>Operation</arg>
+		<arg>Operation (submit, create, micro, minor, major, updateReadme, upload)</arg>
 		<arg>Arguments</arg>
 		<arg>...</arg>
 	</haxelib>

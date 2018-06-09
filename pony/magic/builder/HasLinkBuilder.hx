@@ -21,69 +21,75 @@
 * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
-package pony.magic;
+package pony.magic.builder;
 
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
-import haxe.macro.Compiler;
-import haxe.xml.Fast;
-import sys.io.File;
-import pony.text.XmlConfigReader;
-import pony.text.XmlTools;
-using Lambda;
+import haxe.macro.Type;
+import pony.text.TextTools;
+
+using pony.macro.Tools;
 #end
 
 /**
- * NPMBuilder
+ * HasLinkBuilder
  * @author AxGord <axgord@gmail.com>
  */
-class NPMBuilder {
-
-    #if macro
-	private static inline var file:String = 'pony.xml';
-    private static var replaces:Array<String> = ['-', '.'];
-    #end
-
+class HasLinkBuilder {
 	macro public static function build():Array<Field> {
-		var access = [APublic, AStatic];
-		var faccess = [APrivate, AStatic, AInline];
-		Context.registerModuleDependency(Context.getLocalModule(), file);
 		var fields:Array<Field> = Context.getBuildFields();
-        if (!sys.FileSystem.exists(file)) return fields;
-        var xml = XmlTools.fast(File.getContent(file)).node.project;
-        if (xml.hasNode.npm) {
-            var npm = xml.node.npm;
-            for (module in npm.nodes.module) {
-                var req:String = module.innerData;
-                var name:String = module.has.name ? module.att.name : filterName(req);
-                fields.push({
-					name: name,
-					access: access,
-					pos: Context.currentPos(),
-					kind: FProp('get', 'never', macro:Dynamic, null)
-				});
-                fields.push({
-					name: 'get_$name',
-					access: faccess,
-					pos: Context.currentPos(),
-					kind: FFun({
-                        args: [],
-                        ret: macro:Dynamic,
-                        expr: macro return js.Node.require($v{req})
-                    })
-				});
-            }
-        }
-        return fields;
-    }
+		for (field in fields) {
+			switch field.kind {
+				case FProp(get, set, type, expr) if (get == 'link' || set == 'link'):
 
-    #if macro
-    private static function filterName(s:String):String {
-        s = s.split('@')[0];
-        for (r in replaces) s = StringTools.replace(s, r, '_');
-        return s;
-    }
-    #end
+					if (get == 'link') {
+						get = 'get';
+						
+						var access = [AInline, APrivate];
+						if (field.access.indexOf(AStatic) != -1)
+							access.push(AStatic);
+						fields.push({
+							name: 'get_' + field.name,
+							access: access,
+							kind: FFun({
+								args: [],
+								ret: type,
+								expr: macro return ${ expr }
+							}),
+							pos: field.pos,
+							#if (js||flash) //for interfaces work only js or flash
+							meta: [ { name:':extern', pos: field.pos } ]
+							#end
+						});
+					}
 
+					if (set == 'link') {
+						set = 'set';
+						
+						var access = [AInline, APrivate];
+						if (field.access.indexOf(AStatic) != -1)
+							access.push(AStatic);
+						fields.push({
+							name: 'set_' + field.name,
+							access: access,
+							kind: FFun({
+								args: [{name: 'v', type: type}],
+								ret: type,
+								expr: macro return ${ expr } = v
+							}),
+							pos: field.pos,
+							#if (js||flash) //for interfaces work only js or flash
+							meta: [ { name:':extern', pos: field.pos } ]
+							#end
+						});
+					}
+
+					field.kind = FProp(get, set, type);
+
+				case _:
+			}
+		}
+		return fields;
+	}
 }

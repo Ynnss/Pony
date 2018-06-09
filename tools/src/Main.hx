@@ -24,6 +24,7 @@
 import haxe.xml.Fast;
 import sys.FileSystem;
 import sys.io.File;
+import pony.Tools;
 
 /**
  * Pony Command-Line Tools
@@ -38,6 +39,7 @@ class Main {
 		Sys.println('');
 		Sys.println('Command-Line Tools');
 		Sys.println('Library version ' + Utils.ponyVersion);
+		Sys.println('Build date ' + Tools.getBuildDate());
 		Sys.println('https://github.com/AxGord/Pony');
 		Sys.println('http://lib.haxe.org/p/pony');
 		Sys.println('Type: "pony help" - for help');
@@ -45,21 +47,16 @@ class Main {
 	}
 
 	static function showHelp():Void {
-
-		Sys.println(commands.helpData.join('\n'));
+		Sys.println(commands.helpData.join('\n\n'));
 		Sys.println('');
 		Sys.println('Visit https://github.com/AxGord/Pony/wiki/Pony-Tools for more info');
 		Sys.exit(0);
-
 	}
 
 	static function prepare(cfg:AppCfg):Void {
-
 		var xml = Utils.getXml();
 		new Prepare(xml, cfg.app, cfg.debug);
-
 		Utils.runNode('ponyPrepare');
-
 	}
 
 	static function run(cfg:AppCfg):Void {
@@ -125,7 +122,7 @@ class Main {
 		commands.onLicense < License.run;
 		commands.onHaxelib < Haxelib.run;
 
-		commands.runArgs(Sys.args());
+		commands.runArgs(grabFlags(Sys.args()));
 
 		Sys.println('Total time: ' + Std.int((Sys.time() - startTime) * 1000) / 1000);
 	}
@@ -135,6 +132,17 @@ class Main {
 		if (args.app != null) a.push(args.app);
 		if (args.debug) a.push('debug');
 		return a;
+	}
+
+	static function grabFlags(args:Array<String>):Array<String> {
+		var na:Array<String> = [];
+		for (a in args) {
+			if (a.charAt(0) == '-')
+				Flags.set(a.substr(1));
+			else
+				na.push(a);
+		}
+		return na;
 	}
 	
 }

@@ -31,8 +31,10 @@ class NpmInstall extends BaseInstall {
 	private var sudo:Bool;
 
 	public function new() {
-		this.sudo = Config.OS != TargetOS.Windows;
-		super('npm', true, false);
+		if (Utils.nodeExists) {
+			this.sudo = Config.OS != TargetOS.Windows;
+			super('npm', true, false);
+		}
 	}
 
 	override private function run():Void {
@@ -42,7 +44,5 @@ class NpmInstall extends BaseInstall {
 		var c = cmds.shift();
 		listInstall(c, cmds, Config.settings.npm);
 	}
-
-	public static inline function install():Void if (Utils.nodeExists) new NpmInstall();
 
 }

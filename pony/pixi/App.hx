@@ -47,6 +47,12 @@ import pony.ui.touch.pixi.Touch;
 	var good = 4;
 }
 
+typedef RenderOptions = {
+	?antialias: Null<Bool>,
+	?forceFXAA: Null<Bool>,
+	?roundPixels: Null<Bool>
+}
+
 /**
  * App
  * @author AxGord <axgord@gmail.com>
@@ -103,7 +109,8 @@ class App implements HasSignal {
 		?parentDom:Element,
 		smallDeviceQuality:SmallDeviceQuality = SmallDeviceQuality.normal,
 		resizeInterval:Time = DEFAULT_RESIZE_INTERVAL,
-		?backImg:Sprite
+		?backImg:Sprite,
+		?ro:RenderOptions
 	) {
 		this.width = width;
 		this.height = height;
@@ -121,12 +128,12 @@ class App implements HasSignal {
 		_width = width;
 		_height = height;
 		this.container = container;
-		
-		//beign pixi init
+
 		canvas = Browser.document.createCanvasElement();
 		canvas.style.width = width + "px";
 		canvas.style.height = height + "px";
 		canvas.style.position = "static";
+
 
 		var renderingOptions:ApplicationOptions = {
 			width: width,
@@ -145,7 +152,15 @@ class App implements HasSignal {
 			forceCanvas: true
 			#end
 		};
-		//end pixi init
+
+		if (ro != null) {
+			if (ro.antialias != null)
+				renderingOptions.antialias = ro.antialias;
+			if (ro.forceFXAA != null)
+				renderingOptions.forceFXAA = ro.forceFXAA;
+			if (ro.roundPixels != null)
+				renderingOptions.roundPixels = ro.roundPixels;
+		}
 
 		app = new pixi.core.Application(renderingOptions);
 
